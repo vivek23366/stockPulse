@@ -1,0 +1,9 @@
+{
+  "balance": 6092.65,
+  "holdings": {
+    "AAPL": {
+      "shares": 15.0,
+      "avg_cost": 260.49
+    }
+  }
+}
