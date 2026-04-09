@@ -126,9 +126,12 @@ def compare_stocks(tickers: str = Query(..., description="Comma-separated ticker
 
 
 @app.get("/pulse")
-def market_pulse():
-    pulse = analyzer.get_market_pulse(DEFAULT_PULSE_STOCKS)
-    comparisons = analyzer.compare_stocks(DEFAULT_PULSE_STOCKS)
+def market_pulse(tickers: Optional[str] = Query(None, description="Comma-separated tickers e.g. AAPL,TSLA,MSFT")):
+    ticker_list = [t.strip().upper() for t in tickers.split(",") if t.strip()] if tickers else DEFAULT_PULSE_STOCKS
+    if not ticker_list:
+        raise HTTPException(status_code=400, detail="No tickers provided")
+    pulse = analyzer.get_market_pulse(ticker_list)
+    comparisons = analyzer.compare_stocks(ticker_list)
     # Sanitize all floats in pulse dict
     safe_pulse = {k: (safe(v) if isinstance(v, (int, float)) else v) for k, v in pulse.items()}
     safe_stocks = [
@@ -139,7 +142,7 @@ def market_pulse():
     return {
         **safe_pulse,
         "stocks": safe_stocks,
-        "tickers_analyzed": DEFAULT_PULSE_STOCKS,
+        "tickers_analyzed": ticker_list,
     }
 
 
