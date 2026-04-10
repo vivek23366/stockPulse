@@ -132,21 +132,52 @@ class StockAnalyzer:
                 continue
 
             volatility = self.calculate_volatility(ticker, period)
-            trend = self.calculate_trend(ticker, period)
-            change = self.fetcher.get_price_change(ticker)
+            trend      = self.calculate_trend(ticker, period)
+            change     = self.fetcher.get_price_change(ticker)
+
+            # ── Risk level from annual volatility ──────────────────────
+            ann_vol = volatility['annual_volatility'] if volatility else 0
+            if ann_vol < 15:
+                risk_level = 'Low'
+            elif ann_vol < 30:
+                risk_level = 'Medium'
+            elif ann_vol < 50:
+                risk_level = 'High'
+            else:
+                risk_level = 'Extreme'
+
+            # ── Day range string ───────────────────────────────────────
+            day_low  = info.get('day_low', 0)
+            day_high = info.get('day_high', 0)
+            day_range = f"${day_low:.2f} – ${day_high:.2f}" if day_low and day_high else '—'
+
+            # ── 52-week range string ───────────────────────────────────
+            w52_low  = info.get('fifty_two_week_low', 0)
+            w52_high = info.get('fifty_two_week_high', 0)
+            week52_range = f"${w52_low:.2f} – ${w52_high:.2f}" if w52_low and w52_high else '—'
 
             comparison = {
-                'symbol': ticker.upper(),
-                'name': info['name'],
-                'price': info['price'],
-                'currency': info['currency'],
+                'symbol':        ticker.upper(),
+                'name':          info['name'],
+                'price':         info['price'],
+                'currency':      info['currency'],
+                'volume':        info.get('volume', 0),
+                'market_cap':    info.get('market_cap', 0),
+                'day_high':      day_high,
+                'day_low':       day_low,
+                'day_range':     day_range,
+                'week52_range':  week52_range,
+                'risk_level':    risk_level,
+                'annual_volatility': ann_vol,
+                'max_gain':      volatility['max_daily_gain'] if volatility else 0,
+                'max_loss':      volatility['max_daily_loss'] if volatility else 0,
             }
 
             if change:
-                comparison['change'] = change['change']
+                comparison['change']         = change['change']
                 comparison['change_percent'] = change['change_percent']
             else:
-                comparison['change'] = 0
+                comparison['change']         = 0
                 comparison['change_percent'] = 0
 
             if volatility:
@@ -155,10 +186,10 @@ class StockAnalyzer:
                 comparison['volatility'] = 0
 
             if trend:
-                comparison['trend'] = trend['trend']
+                comparison['trend']         = trend['trend']
                 comparison['period_change'] = trend['price_change_percent']
             else:
-                comparison['trend'] = 'unknown'
+                comparison['trend']         = 'unknown'
                 comparison['period_change'] = 0
 
             comparisons.append(comparison)

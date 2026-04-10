@@ -10,3 +10,5 @@ export const getPortfolio = ()        => api.get('/portfolio')
 export const buyStock    = (ticker, quantity) => api.post('/buy',  { ticker, quantity })
 export const sellStock   = (ticker, quantity) => api.post('/sell', { ticker, quantity })
 export const resetPortfolio = ()      => api.post('/reset')
+export const searchTickers = (q)      => api.get('/search', { params: { q } })
+
