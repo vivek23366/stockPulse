@@ -1,0 +1,23 @@
+[
+  {
+    "username": "demo",
+    "password": "$5$rounds=535000$OFlwUGLDiF2L/uZl$G0v/WsGtOG5ZW6/JLbmHx1KYhN2XTGYu24frpaqfWB/",
+    "name": "Demo User",
+    "email": "demo@stockpulse.io",
+    "avatar": "\ud83d\udcca"
+  },
+  {
+    "username": "vivek",
+    "password": "$5$rounds=535000$LvY5f3sXd6EyEL1o$LaFmif0d15KDhCqQ4w0CwMLxlTD4IjEw5Qqw6RpIP16",
+    "name": "Vivek",
+    "email": "vivek@stockpulse.io",
+    "avatar": "\ud83d\ude80"
+  },
+  {
+    "username": "admin",
+    "password": "$5$rounds=535000$RDTuiCmQDlP/.OId$tE6KTWH8rQF5FEUtWe0YolQjJuporYGFTzq9mmpfJbB",
+    "name": "Admin",
+    "email": "admin@stockpulse.io",
+    "avatar": "\u26a1"
+  }
+]

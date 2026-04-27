@@ -6,7 +6,7 @@ import MarketPulse from './components/MarketPulse'
 import WatchMode from './components/WatchMode'
 import PaperTrading from './components/PaperTrading'
 import Toast from './components/Toast'
-import LoginPage from './components/LoginPage'
+import LoginPage, { saveSession, clearSession } from './components/LoginPage'
 
 const TABS = [
   { id: 'search',  label: 'Search',  icon: '🔍' },
@@ -71,11 +71,20 @@ function UserPill({ user, onLogout }) {
   )
 }
 
-/* ─── Session helpers ──────────────────────────────────────── */
-function loadSession() {
-  try { return JSON.parse(localStorage.getItem('sp_session')) } catch { return null }
+/* ─── Session helpers ────────────────────────── */
+const API = 'http://localhost:8000'
+
+async function verifyToken(token) {
+  try {
+    const res = await fetch(`${API}/auth/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    if (!res.ok) return null
+    return await res.json()  // returns user object
+  } catch {
+    return null
+  }
 }
-function clearSession() { localStorage.removeItem('sp_session') }
 
 /* ═══════════════════════════════════════════════════════════ */
 export default function App() {
@@ -84,11 +93,15 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('search')
   const [toast, setToast]       = useState(null)
 
-  /* Restore session on mount */
+  /* Restore session on mount — verify JWT with backend */
   useEffect(() => {
-    const session = loadSession()
-    if (session) setUser(session)
-    setAuthReady(true)
+    const token = localStorage.getItem('sp_token')
+    if (!token) { setAuthReady(true); return }
+    verifyToken(token).then(user => {
+      if (user) setUser(user)
+      else clearSession()
+      setAuthReady(true)
+    })
   }, [])
 
   const showToast = useCallback((message, type = 'success') => {

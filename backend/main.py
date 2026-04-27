@@ -9,11 +9,13 @@ import os
 # Ensure project root is in path so src/ modules are importable
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Header
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
 import math
+
+import backend.auth as auth_mod
 
 from src.fetcher import StockFetcher
 from src.analyzer import StockAnalyzer
@@ -403,6 +405,90 @@ def watch_stock(ticker: str):
 def get_portfolio():
     return ptf.get_portfolio(_get_live_price)
 
+
+# ── Auth Models ──────────────────────────────────────────────────────────────
+
+class RegisterRequest(BaseModel):
+    username: str
+    password: str
+    name: str
+    email: str
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+
+@app.post("/auth/register")
+def register(req: RegisterRequest):
+    """
+    Create a new user account.
+    Returns a JWT token on success.
+    """
+    if len(req.username) < 3:
+        raise HTTPException(status_code=400, detail="Username must be at least 3 characters")
+    if len(req.password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+    if "@" not in req.email:
+        raise HTTPException(status_code=400, detail="Invalid email address")
+    if not req.name.strip():
+        raise HTTPException(status_code=400, detail="Name is required")
+    try:
+        user = auth_mod.create_user(
+            username=req.username.strip(),
+            password=req.password,
+            name=req.name.strip(),
+            email=req.email.strip(),
+        )
+    except ValueError as exc:
+        msg = str(exc)
+        if msg == "username_taken":
+            raise HTTPException(status_code=409, detail="Username is already taken")
+        if msg == "email_taken":
+            raise HTTPException(status_code=409, detail="Email address already registered")
+        raise HTTPException(status_code=400, detail=msg)
+
+    token = auth_mod.create_token(user["username"])
+    return {
+        "token": token,
+        "user": {k: v for k, v in user.items() if k != "password"},
+    }
+
+
+@app.post("/auth/login")
+def login(req: LoginRequest):
+    """
+    Authenticate a user and return a JWT token.
+    """
+    user = auth_mod.authenticate(req.username.strip(), req.password)
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid username or password")
+    token = auth_mod.create_token(user["username"])
+    return {
+        "token": token,
+        "user": user,
+    }
+
+
+@app.get("/auth/me")
+def get_me(authorization: Optional[str] = Header(None)):
+    """
+    Verify a JWT token and return the current user's profile.
+    Expects:  Authorization: Bearer <token>
+    """
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing or malformed token")
+    token = authorization[len("Bearer "):]
+    username = auth_mod.decode_token(token)
+    if not username:
+        raise HTTPException(status_code=401, detail="Token expired or invalid")
+    user = auth_mod.get_user(username)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {k: v for k, v in user.items() if k != "password"}
+
+
+# ── Trading Models ────────────────────────────────────────────────────────────
 
 class BuyRequest(BaseModel):
     ticker: str
